@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minhas Listas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background-color: #F9FAFB;
+      color: #2D3748;
+    }
+
+    header {
+      background: #C6F6D5;
+      padding: 1.5rem;
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #2D3748;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 2rem;
+    }
+
+    .card {
+      background-color: white;
+      border-radius: 24px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      padding: 1.5rem;
+      margin: 0.5rem;
+      position: relative;
+      flex: 1 1 340px;
+      max-width: 400px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 1.4rem;
+    }
+
+    .card-menu {
+      cursor: pointer;
+      font-size: 1.4rem;
+      position: relative;
+    }
+
+    .menu-options {
+      position: absolute;
+      top: 28px;
+      right: 0;
+      background: white;
+      border: 1px solid #CBD5E0;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 10;
+      display: none;
+      flex-direction: column;
+    }
+
+    .menu-options button {
+      background: none;
+      border: none;
+      padding: 0.5rem 1rem;
+      text-align: left;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+
+    .menu-options button:hover {
+      background-color: #EDF2F7;
+    }
+
+    .separator {
+      border-top: 1px dashed #CBD5E0;
+      margin: 0.8rem 0;
+    }
+
+    .item {
+      display: flex;
+      align-items: center;
+      margin: 0.5rem 0;
+    }
+
+    .item input[type="checkbox"] {
+      margin-right: 0.6rem;
+    }
+
+    .item input[type="text"] {
+      border: none;
+      background: transparent;
+      width: 100%;
+      font-size: 1rem;
+      color: #2D3748;
+    }
+
+    .item input[type="text"]:focus {
+      outline: none;
+    }
+
+    .item.checked input[type="text"] {
+      text-decoration: line-through;
+      opacity: 0.6;
+    }
+
+    .floating-button {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background-color: #38B2AC;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      font-size: 2rem;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>Minhas Listas</header>
+
+  <div class="container" id="listContainer"></div>
+
+  <button class="floating-button" onclick="addNewList()">+</button>
+
+  <script>
+    function saveLists() {
+      const data = Array.from(document.querySelectorAll('.card')).map(card => {
+        return {
+          title: card.querySelector('.card-title').innerText,
+          items: Array.from(card.querySelectorAll('.item')).map(item => ({
+            text: item.querySelector('input[type="text"]').value,
+            checked: item.querySelector('input[type="checkbox"]').checked
+          }))
+        }
+      });
+      localStorage.setItem('shoppingLists', JSON.stringify(data));
+    }
+
+    function loadLists() {
+      const data = JSON.parse(localStorage.getItem('shoppingLists') || '[]');
+      data.forEach(list => {
+        createListCard(list.title, list.items);
+      });
+    }
+
+    function createListCard(title = 'Nova Lista', items = []) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="card-title" contenteditable="true">${title}</div>
+          <div class="card-menu" onclick="toggleMenu(this)">&#x22EE;
+            <div class="menu-options">
+              <button onclick="addItem(this)">➕ Adicionar item</button>
+              <button onclick="editTitle(this)">✏️ Editar título</button>
+              <button onclick="deleteList(this)">🗑️ Excluir lista</button>
+            </div>
+          </div>
+        </div>
+        <div class="separator"></div>
+        <div class="items"></div>
+      `;
+      const itemsDiv = card.querySelector('.items');
+      if (items.length === 0) {
+        items.push({ text: 'Item 1', checked: false }, { text: 'Item 2', checked: false });
+      }
+      items.forEach(({ text, checked }) => {
+        const item = document.createElement('div');
+        item.className = 'item' + (checked ? ' checked' : '');
+        item.innerHTML = `
+          <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCheck(this)" />
+          <input type="text" value="${text}" />
+        `;
+        itemsDiv.appendChild(item);
+      });
+      document.getElementById('listContainer').appendChild(card);
+      saveLists();
+    }
+
+    function addNewList() {
+      createListCard();
+    }
+
+    function toggleMenu(elem) {
+      const menu = elem.querySelector('.menu-options');
+      const isVisible = menu.style.display === 'flex';
+      document.querySelectorAll('.menu-options').forEach(m => m.style.display = 'none');
+      menu.style.display = isVisible ? 'none' : 'flex';
+    }
+
+    function addItem(button) {
+      const itemsDiv = button.closest('.card').querySelector('.items');
+      const item = document.createElement('div');
+      item.className = 'item';
+      item.innerHTML = `
+        <input type="checkbox" onchange="toggleCheck(this)" />
+        <input type="text" value="Novo item" />
+      `;
+      itemsDiv.appendChild(item);
+      saveLists();
+    }
+
+    function editTitle(button) {
+      const title = button.closest('.card').querySelector('.card-title');
+      title.focus();
+      title.addEventListener('blur', saveLists, { once: true });
+    }
+
+    function deleteList(button) {
+      if (confirm("Tem certeza que deseja excluir esta lista?")) {
+        const card = button.closest('.card');
+        card.remove();
+        saveLists();
+      }
+    }
+
+    function toggleCheck(checkbox) {
+      const item = checkbox.closest('.item');
+      item.classList.toggle('checked', checkbox.checked);
+      saveLists();
+    }
+
+    window.onload = loadLists;
+  </script>
+</body>
+</html>
