@@ -6,6 +6,7 @@
   <title>Minhas Listas</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    /* Estilo base da página */
     * {
       box-sizing: border-box;
       font-family: 'Inter', sans-serif;
@@ -23,7 +24,6 @@
       text-align: center;
       font-size: 1.8rem;
       font-weight: 600;
-      color: #2D3748;
     }
 
     .container {
@@ -33,7 +33,7 @@
       padding: 2rem;
     }
 
-    .card {
+    .lista {
       background-color: white;
       border-radius: 24px;
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
@@ -44,25 +44,25 @@
       max-width: 400px;
     }
 
-    .card-header {
+    .cabecalho {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 0.5rem;
     }
 
-    .card-title {
+    .titulo {
       font-weight: 600;
       font-size: 1.4rem;
     }
 
-    .card-menu {
+    .botao-menu {
       cursor: pointer;
       font-size: 1.4rem;
       position: relative;
     }
 
-    .menu-options {
+    .opcoes {
       position: absolute;
       top: 28px;
       right: 0;
@@ -75,7 +75,7 @@
       flex-direction: column;
     }
 
-    .menu-options button {
+    .opcoes button {
       background: none;
       border: none;
       padding: 0.5rem 1rem;
@@ -84,43 +84,42 @@
       font-size: 0.95rem;
     }
 
-    .menu-options button:hover {
+    .opcoes button:hover {
       background-color: #EDF2F7;
     }
 
-    .separator {
+    .linha {
       border-top: 1px dashed #CBD5E0;
       margin: 0.8rem 0;
     }
 
-    .item {
+    .tarefa {
       display: flex;
       align-items: center;
       margin: 0.5rem 0;
     }
 
-    .item input[type="checkbox"] {
+    .tarefa input[type="checkbox"] {
       margin-right: 0.6rem;
     }
 
-    .item input[type="text"] {
+    .tarefa input[type="text"] {
       border: none;
       background: transparent;
       width: 100%;
       font-size: 1rem;
-      color: #2D3748;
     }
 
-    .item input[type="text"]:focus {
+    .tarefa input[type="text"]:focus {
       outline: none;
     }
 
-    .item.checked input[type="text"] {
+    .tarefa.concluida input[type="text"] {
       text-decoration: line-through;
       opacity: 0.6;
     }
 
-    .floating-button {
+    .botao-fixo {
       position: fixed;
       bottom: 2rem;
       right: 2rem;
@@ -145,109 +144,115 @@
 <body>
   <header>Minhas Listas</header>
 
-  <div class="container" id="listContainer"></div>
+  <div class="container" id="areaListas"></div>
 
-  <button class="floating-button" onclick="addNewList()">+</button>
+  <button class="botao-fixo" onclick="novaLista()">+</button>
 
   <script>
-    function saveLists() {
-      const data = Array.from(document.querySelectorAll('.card')).map(card => {
+    // Salva todas as listas no navegador
+    function salvarTudo() {
+      const listas = Array.from(document.querySelectorAll('.lista')).map(bloco => {
         return {
-          title: card.querySelector('.card-title').innerText,
-          items: Array.from(card.querySelectorAll('.item')).map(item => ({
-            text: item.querySelector('input[type="text"]').value,
-            checked: item.querySelector('input[type="checkbox"]').checked
+          titulo: bloco.querySelector('.titulo').innerText,
+          tarefas: Array.from(bloco.querySelectorAll('.tarefa')).map(tarefa => ({
+            texto: tarefa.querySelector('input[type="text"]').value,
+            feita: tarefa.querySelector('input[type="checkbox"]').checked
           }))
         }
       });
-      localStorage.setItem('shoppingLists', JSON.stringify(data));
+      localStorage.setItem('minhasListas', JSON.stringify(listas));
     }
 
-    function loadLists() {
-      const data = JSON.parse(localStorage.getItem('shoppingLists') || '[]');
-      data.forEach(list => {
-        createListCard(list.title, list.items);
+    // Carrega as listas salvas ao abrir a página
+    function carregarListas() {
+      const listasSalvas = JSON.parse(localStorage.getItem('minhasListas') || '[]');
+      listasSalvas.forEach(lista => {
+        criarBlocoLista(lista.titulo, lista.tarefas);
       });
     }
 
-    function createListCard(title = 'Nova Lista', items = []) {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <div class="card-header">
-          <div class="card-title" contenteditable="true">${title}</div>
-          <div class="card-menu" onclick="toggleMenu(this)">&#x22EE;
-            <div class="menu-options">
-              <button onclick="addItem(this)">➕ Adicionar item</button>
-              <button onclick="editTitle(this)">✏️ Editar título</button>
-              <button onclick="deleteList(this)">🗑️ Excluir lista</button>
+    function criarBlocoLista(titulo = 'Lista nova', tarefas = []) {
+      const bloco = document.createElement('div');
+      bloco.className = 'lista';
+      bloco.innerHTML = `
+        <div class="cabecalho">
+          <div class="titulo" contenteditable="true">${titulo}</div>
+          <div class="botao-menu" onclick="abrirMenu(this)">&#x22EE;
+            <div class="opcoes">
+              <button onclick="inserirTarefa(this)">➕ Nova tarefa</button>
+              <button onclick="editarTitulo(this)">✏️ Renomear</button>
+              <button onclick="removerLista(this)">🗑️ Apagar</button>
             </div>
           </div>
         </div>
-        <div class="separator"></div>
-        <div class="items"></div>
+        <div class="linha"></div>
+        <div class="tarefas"></div>
       `;
-      const itemsDiv = card.querySelector('.items');
-      if (items.length === 0) {
-        items.push({ text: 'Item 1', checked: false }, { text: 'Item 2', checked: false });
+
+      const listaTarefas = bloco.querySelector('.tarefas');
+      if (tarefas.length === 0) {
+        tarefas.push({ texto: 'Exemplo 1', feita: false });
       }
-      items.forEach(({ text, checked }) => {
-        const item = document.createElement('div');
-        item.className = 'item' + (checked ? ' checked' : '');
-        item.innerHTML = `
-          <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCheck(this)" />
-          <input type="text" value="${text}" />
+
+      tarefas.forEach(({ texto, feita }) => {
+        const nova = document.createElement('div');
+        nova.className = 'tarefa' + (feita ? ' concluida' : '');
+        nova.innerHTML = `
+          <input type="checkbox" ${feita ? 'checked' : ''} onchange="marcarFeita(this)" />
+          <input type="text" value="${texto}" />
         `;
-        itemsDiv.appendChild(item);
+        listaTarefas.appendChild(nova);
       });
-      document.getElementById('listContainer').appendChild(card);
-      saveLists();
+
+      document.getElementById('areaListas').appendChild(bloco);
+      salvarTudo();
     }
 
-    function addNewList() {
-      createListCard();
+    function novaLista() {
+      criarBlocoLista();
     }
 
-    function toggleMenu(elem) {
-      const menu = elem.querySelector('.menu-options');
-      const isVisible = menu.style.display === 'flex';
-      document.querySelectorAll('.menu-options').forEach(m => m.style.display = 'none');
-      menu.style.display = isVisible ? 'none' : 'flex';
+    function abrirMenu(botao) {
+      const menu = botao.querySelector('.opcoes');
+      const aberto = menu.style.display === 'flex';
+      document.querySelectorAll('.opcoes').forEach(m => m.style.display = 'none');
+      menu.style.display = aberto ? 'none' : 'flex';
     }
 
-    function addItem(button) {
-      const itemsDiv = button.closest('.card').querySelector('.items');
-      const item = document.createElement('div');
-      item.className = 'item';
-      item.innerHTML = `
-        <input type="checkbox" onchange="toggleCheck(this)" />
+    function inserirTarefa(botao) {
+      const lista = botao.closest('.lista').querySelector('.tarefas');
+      const novaTarefa = document.createElement('div');
+      novaTarefa.className = 'tarefa';
+      novaTarefa.innerHTML = `
+        <input type="checkbox" onchange="marcarFeita(this)" />
         <input type="text" value="Novo item" />
       `;
-      itemsDiv.appendChild(item);
-      saveLists();
+      lista.appendChild(novaTarefa);
+      salvarTudo();
     }
 
-    function editTitle(button) {
-      const title = button.closest('.card').querySelector('.card-title');
-      title.focus();
-      title.addEventListener('blur', saveLists, { once: true });
+    function editarTitulo(botao) {
+      const titulo = botao.closest('.lista').querySelector('.titulo');
+      titulo.focus();
+      titulo.addEventListener('blur', salvarTudo, { once: true });
     }
 
-    function deleteList(button) {
-      if (confirm("Tem certeza que deseja excluir esta lista?")) {
-        const card = button.closest('.card');
-        card.remove();
-        saveLists();
+    function removerLista(botao) {
+      if (confirm("Tem certeza que quer apagar essa lista?")) {
+        const bloco = botao.closest('.lista');
+        bloco.remove();
+        salvarTudo();
       }
     }
 
-    function toggleCheck(checkbox) {
-      const item = checkbox.closest('.item');
-      item.classList.toggle('checked', checkbox.checked);
-      saveLists();
+    function marcarFeita(caixa) {
+      const item = caixa.closest('.tarefa');
+      item.classList.toggle('concluida', caixa.checked);
+      salvarTudo();
     }
 
-    window.onload = loadLists;
+    // Inicia carregando o que já estiver salvo
+    window.onload = carregarListas;
   </script>
 </body>
 </html>
